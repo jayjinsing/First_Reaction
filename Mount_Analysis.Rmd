@@ -1,0 +1,16 @@
+---
+title: "Mount_Analysis"
+author: "Jay Falk"
+date: "5/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-library, message = FALSE}
+library(tidyverse)
+library(dplyr)
+```
+
