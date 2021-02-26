@@ -17,7 +17,11 @@ library(tidyverse)
 Load stored datasets
 ```{r datasets, message = FALSE}
 longcomplete <- read_csv("FirstReaction_gittrack.csv")
+behaviors <- read_csv("AllBehaviors_gittrack.csv")
+trialsides_sides <- read_csv("trialsides_gittrack.csv")
 ```
+
+##First Reaction Interactions with Mounts
 
 Data shaping for analysis
 ```{r}
@@ -91,6 +95,16 @@ mffeedtable <- table(mf$feed)
 prop.table(mffeedtable)
 chisq.test(mffeedtable)
 
+#What about if we take out jacobins?  
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(feed != 0) %>%
+  filter(type != "Flom", type != "Flof")
+mffeedtable <- table(mf$feed)
+prop.table(mffeedtable)
+chisq.test(mffeedtable)
+
+
 
 #Do all hummingbirds feed with androchrome female versus heterochrome female mounts at different rates? 
 fmlf <- testcategories_nona %>% 
@@ -105,6 +119,15 @@ fmlf <- testcategories_nona %>%
   filter(test == "F/MLF") %>%
   filter(feed != 0) %>%
   filter(type != "Flom")
+fmlffeedtable <- table(fmlf$feed)
+prop.table(fmlffeedtable)
+chisq.test(fmlffeedtable)
+
+#What about if we take out all jacobins?  
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(feed != 0) %>%
+  filter(type != "Flom", type != "Flof")
 fmlffeedtable <- table(fmlf$feed)
 prop.table(fmlffeedtable)
 chisq.test(fmlffeedtable)
@@ -127,7 +150,52 @@ mmlf <- testcategories_nona %>%
 mmlffeedtable <- table(mmlf$feed)
 prop.table(mmlffeedtable)
 chisq.test(mmlffeedtable)
+
+#What about if we take out all jacobins?  
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(feed != 0) %>%
+  filter(type != "Flom", type != "Flof")
+mmlffeedtable <- table(mmlf$feed)
+prop.table(mmlffeedtable)
+chisq.test(mmlffeedtable)
 ```
+
+
+Ok, so that's what non-androchromes do. What about androchromes?
+```{r}
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(feed != 0) %>%
+  filter(type == "Flom")
+mffeedtable <- table(mf$feed)
+prop.table(mffeedtable)
+chisq.test(mffeedtable)
+#         F         M 
+# 0.4137931 0.5862069 
+
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(feed != 0) %>%
+  filter(type == "Flom")
+fmlffeedtable <- table(fmlf$feed)
+prop.table(fmlffeedtable)
+chisq.test(fmlffeedtable)
+#         F       MLF 
+# 0.4666667 0.5333333 
+
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(feed != 0) %>%
+  filter(type == "Flom")
+mmlffeedtable <- table(mmlf$feed)
+prop.table(mmlffeedtable)
+chisq.test(mmlffeedtable)
+
+#         M       MLF 
+# 0.5555556 0.4444444 
+```
+
 
 Attack behavior. First look at whether there are differences between types of interactors in who they choose to attack. Types are androchromes, heterochromes, Amazilias, and Other.
 ```{r}
@@ -137,7 +205,7 @@ mf <- testcategories_nona %>%
   filter(attack != 0)
 mfattacktable <- table(mf$type, mf$attack)
 prop.table(mfattacktable, m=1)
-chisq.test(mfattacktable)
+fisher.test(mfattacktable)
 
 #Do types of birds differ in the way they attack androchrome females versus heterochrome females? 
 fmlf <- testcategories_nona %>% 
@@ -145,7 +213,7 @@ fmlf <- testcategories_nona %>%
   filter(attack != 0)
 fmlfattacktable <- table(fmlf$type, fmlf$attack)
 prop.table(fmlfattacktable, m=1)
-chisq.test(fmlfattacktable)
+fisher.test(fmlfattacktable)
 
 #Do types of birds differ in the way they attack androchrome females versus males? 
 mmlf <- testcategories_nona %>% 
@@ -153,10 +221,14 @@ mmlf <- testcategories_nona %>%
   filter(attack != 0)
 mmlfattacktable <- table(mmlf$type, mmlf$attack)
 prop.table(mmlfattacktable, m=1)
-chisq.test(mmlfattacktable)
+fisher.test(mmlfattacktable)
+
+test <- testcategories_nona %>% filter(attack != 0) 
+testtable <- table(test$type)
+
 ```
 
-Are mounts fed with at different rates? Androchromes seem to be doing something different than the other types of birds in the male versus heterochrome female test type. See what happens if we take them out. 
+Compile all the attacks since no evidence that types are doing different things, then test whether mounts are treated differently
 ```{r}
 mf <- testcategories_nona %>% 
   filter(test == "M/F") %>%
@@ -164,6 +236,42 @@ mf <- testcategories_nona %>%
 mfattacktable <- table(mf$attack)
 prop.table(mfattacktable)
 chisq.test(mfattacktable)
+binom.test(mfattacktable)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  mfattacktable
+# X-squared = 6.8182, df = 1, p-value = 0.009023
+
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+mfattacktable <- table(mf$attack)
+prop.table(mfattacktable)
+chisq.test(mfattacktable, correct = F)
+binom.test(mfattacktable, p = 0.5)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  mfattacktable
+# X-squared = 4.5714, df = 1, p-value = 0.03251
+
+mf <- testcategories_nona %>%
+  filter(test == "M/F") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+mfattacktable <- table(mf$attack)
+prop.table(mfattacktable)
+chisq.test(mfattacktable, correct = T)
+binom.test(mfattacktable, p = 0.5)
+
+# Chi-squared approximation may be incorrect
+# 	Chi-squared test for given probabilities
+# 
+# data:  mfattacktable
+# X-squared = 2.7778, df = 1, p-value = 0.09558
 
 fmlf <- testcategories_nona %>% 
   filter(test == "F/MLF") %>%
@@ -171,13 +279,132 @@ fmlf <- testcategories_nona %>%
 fmlfattacktable <- table(fmlf$attack)
 prop.table(fmlfattacktable)
 chisq.test(fmlfattacktable)
+binom.test(fmlfattacktable, p = 0.5)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  fmlfattacktable
+# X-squared = 13.714, df = 1, p-value = 0.0002128
+
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+fmlfattacktable <- table(fmlf$attack)
+prop.table(fmlfattacktable)
+chisq.test(fmlfattacktable)
+binom.test(fmlfattacktable)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  fmlfattacktable
+# X-squared = 10.889, df = 1, p-value = 0.0009674
+
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+fmlfattacktable <- table(fmlf$attack)
+prop.table(fmlfattacktable)
+chisq.test(fmlfattacktable)
+binom.test(fmlfattacktable)
+
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  fmlfattacktable
+# X-squared = 8.0667, df = 1, p-value = 0.004509
 
 mmlf <- testcategories_nona %>% 
   filter(test == "M/MLF") %>%
-  filter(attack != 0)
+  filter(attack != 0) 
 mmlfattacktable <- table(mmlf$attack)
 prop.table(mmlfattacktable)
 chisq.test(mmlfattacktable)
+binom.test(mmlfattacktable, p = 0.5)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  mmlfattacktable
+# X-squared = 0.037037, df = 1, p-value = 0.8474
+
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+mmlfattacktable <- table(mmlf$attack)
+prop.table(mmlfattacktable)
+chisq.test(mmlfattacktable)
+binom.test(mmlfattacktable, p = 0.5)
+
+# Chi-squared approximation may be incorrect
+# 	Chi-squared test for given probabilities
+# 
+# data:  mmlfattacktable
+# X-squared = 0, df = 1, p-value = 1
+
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+mmlfattacktable <- table(mmlf$attack)
+prop.table(mmlfattacktable)
+chisq.test(mmlfattacktable)
+
+# Chi-squared approximation may be incorrect
+# 	Chi-squared test for given probabilities
+# 
+# data:  mmlfattacktable
+# X-squared = 0.2, df = 1, p-value = 0.6547
+```
+
+What if we just look at species?
+```{r}
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(attack != 0) %>%
+  mutate(species = if_else(type == "Ama", "other",
+                                      if_else(type == "Other", "other", "florisuga")))
+
+mfattacktable <- table(mf$species, mf$attack)
+prop.table(mfattacktable, m=1)
+fisher.test(mfattacktable)
+prop.test(mfattacktable, correct = T)
+# data:  mfattacktable
+# X-squared = 9.6416e-31, df = 1, p-value = 1
+(7+2)/(7+2+17+7)
+
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0) %>%
+  mutate(species = if_else(type == "Ama", "other",
+                                      if_else(type == "Other", "other", "florisuga")))
+
+fmlfattacktable <- table(fmlf$species, fmlf$attack)
+prop.table(fmlfattacktable, m=1)
+fisher.test(fmlfattacktable)
+prop.test(fmlfattacktable, correct = T)
+# data:  fmlfattacktable
+# X-squared = 0.31425, df = 1, p-value = 0.5751
+(13+2)/(13+2+20+7)
+
+mmlf <- testcategories_nona %>%
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) %>%
+  mutate(species = if_else(type == "Ama", "other",
+                                      if_else(type == "Other", "other", "florisuga")))
+
+mmlfattacktable <- table(mmlf$species, mmlf$attack)
+prop.table(mmlfattacktable, m=1)
+fisher.test(mmlfattacktable)
+prop.test(mmlfattacktable, correct = T)
+# data:  mmlfattacktable
+# X-squared = 6.3196e-31, df = 1, p-value = 1
+(2+3)/(2+3+11+11)
+
+(2+3+13+2+7+2)/(2+3+11+11+13+2+20+7+7+2+17+7)
 ```
 
 This looks at sex behavior of males toward the mounts. First need to shape the data a bit 
@@ -198,15 +425,246 @@ Who did androchromes choose to direct sexual behavior toward?
 ```{r}
 #All chose F first in M/F tests
 mf <- courtscops_combine %>% filter(test == "M/F") 
+mfcourtcoptable <- table(mf$combine)
+prop.table(mfcourtcoptable)
+binom.test(mfcourtcoptable, p = 0.5)
+
+mf_fortest <- c(12, 0)
+binom.test(mf_fortest, p = .5)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  mf_fortest
+# X-squared = 12, df = 1, p-value = 0.000532
 
 #All chose F first in M/MLF
 fmlf <- courtscops_combine %>% filter(test == "F/MLF")
 
-#Some choice MLF and some chose M in M/MLF tests
+mmlf_fortest <- c(16, 0)
+binom.test(mmlf_fortest, p = .5)
+
+# 	Chi-squared test for given probabilities
+# 
+# data:  mmlf_fortest
+# X-squared = 16, df = 1, p-value = 6.334e-05
+
+#Some chose MLF and some chose M in M/MLF tests
 mmlf <- courtscops_combine %>% 
   filter(test == "M/MLF")
 mmlfcourtcoptable <- table(mmlf$combine)
 prop.table(mmlfcourtcoptable)
 chisq.test(mmlfcourtcoptable)
+binom.test(mmlfcourtcoptable)
+
+# Chi-squared approximation may be incorrect
+# 	Chi-squared test for given probabilities
+# 
+# data:  mmlfcourtcoptable
+# X-squared = 0.5, df = 1, p-value = 0.4795
+```
+
+##All interactions with Mounts
+
+Shape the data and change Left and Right to the actual mount types
+```{r}
+#How many individual locations are in the dataset?
+n_distinct(behaviors$Obs_id)
+#26 different locations
+
+#Add some useful columns
+behaviorsp <- behaviors %>% 
+  #Make a new column with the species but no number
+  mutate(species = substr(subject, 1, 4)) %>%
+  #Group together everything that's not a jacobin for the species
+  mutate(species_cat = if_else(species == "FloM", "Male", 
+                              if_else(species == "FloF", "Female", "Other"))) %>%
+  #Group together everything that's not a jacobin for the modifier
+  mutate(modifiers_cat = if_else(modifiers == "FloM", "Male", 
+                                 if_else(modifiers == "FloF", "Female", "Other")))
+
+
+#Make datasets of all the R and L mount types in each trial
+sidesR <- trialsides_sides %>% select(Obs_id, Right)
+sidesL <- trialsides_sides %>% select(Obs_id, Left)
+
+#Seperate R and L interactions 
+firstreactionR <- behaviorsp %>% filter(modifiers == "Right")
+firstreactionL <- behaviorsp %>% filter(modifiers == "Left")
+
+#Join the mount type with all the R interactions for each trial
+firstreactionR <- firstreactionR %>%
+  inner_join(sidesR, by = "Obs_id") %>%
+  select(-modifiers) %>%
+  rename(mount = Right)
+
+#Join the mount type with all the L interactions for each trial
+firstreactionL <- firstreactionL %>%
+  inner_join(sidesL, by = "Obs_id") %>%
+  select(-modifiers) %>%
+  rename(mount = Left)
+
+#Bind the R and L interactions together again for a complete dataset
+firstreactionmounts <- rbind(firstreactionL, firstreactionR)
+```
+
+Who did males tend to chase and who chased them? 
+```{r}
+#First, how many chases overall involved an androchrome? 
+behaviorsp %>% 
+  arrange(start)
+
+behaviorsp %>% 
+  filter(behavior == "Chase") %>%
+  filter(species == c("FloM", "Flof"))
+
+#Filter all the interactions where a male jacobin was the chaser
+mchaser <- behaviorsp %>% filter(species == "FloM") %>% filter(behavior == "Chase")
+#228 instances of a male chasing another bird
+mchaser %>% filter(modifiers == "FloM")
+#114 of those are against another Flom
+mchaser %>% filter(modifiers == "FloF")
+#72 of those are against another Flof
+mchaser %>% filter(modifiers != "FloM") %>% filter(modifiers != "FloF")
+#39 of those are against non-jacobins or unknowns
+
+mchasee <- behaviorsp %>%
+  filter(species == "FloM") %>%
+  filter(behavior == "Chased by")
+#157 instances of a male being chased by another bird
+mchasee %>% filter(modifiers == "FloM")
+#116 of those are from other Floms
+mchasee %>% filter(modifiers == "FloF")
+#2 of those are from Flofs
+mchasee %>% filter(modifiers != "FloM") %>% filter(modifiers != "FloF")
+#39 of those are from something else or unknown
+
+#chaser to chased ratio of heterochromes
+nrow(mchaser)/nrow(mchasee)
+```
+
+Who did females tend to chase and who chased them? 
+```{r}
+fchaser <- behaviorsp %>% filter(species == "FloF") %>% filter(behavior == "Chase")
+#7 instances of a female chasing another bird
+# 4 of those chases were towards Floms, 2 towards Flofs, and 1 toward Ama
+
+fchasee <- behaviorsp %>%
+  filter(species == "FloF") %>%
+  filter(behavior == "Chased by")
+#87 instances of a female being chased by another bird
+fchasee %>% filter(modifiers == "FloM")
+#73 of those are from Floms
+fchasee %>% filter(modifiers == "FloF")
+#3 of those are from Flofs
+fchasee %>% filter(modifiers != "FloM") %>% filter(modifiers != "FloF")
+#10 of those are from something else or unknown
+
+#chaser to chased ratio of heterochromes
+nrow(fchaser)/nrow(fchasee)
+```
+
+Plots
+```{r}
+chases <- behaviorsp %>%
+  filter(behavior %in% c("Chase", "Chased by")) %>%
+  filter(!is.na(modifiers_cat)) %>%
+  filter(!is.na(species_cat))
+
+ggplot(chases, aes(behavior, fill = modifiers_cat)) +
+  geom_bar(position = "stack", width = 0.7) +
+  #scale_x_discrete(limits = c("Male", "Female", "Other")) +
+  facet_wrap(~ factor(species_cat, levels = c("Male", "Female", "Other"))) +
+  theme_minimal()
+
+ggplot(chases, aes(behavior, fill = modifiers)) +
+  geom_bar(position = "stack", width = 0.7) +
+  #scale_x_discrete(limits = c("Male", "Female", "Other")) +
+  facet_wrap(~ factor(species)) +
+  theme_minimal()
+
+chases %>% filter(behavior == "Chased by") %>% filter(modifiers_cat == "Other") %>% filter(species_cat == "Male") %>% arrange(Obs_date)
+chases %>% filter(behavior == "Chase") %>% filter(modifiers_cat == "Other") %>% filter(species_cat == "Male") %>% arrange(Obs_date)
+
+ggplot(chases, aes(species_cat, fill = behavior)) +
+  geom_bar(position = "dodge", width = 0.5) +
+  scale_fill_manual(values=c("#00CC66","#0066CC"), labels = c("Chaser", "Chasee"))+
+  scale_x_discrete(limits = c("Male", "Female")) +
+  labs(x = " ", y = "Instances") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 16), axis.text.y = element_text(size = 14)) +
+  theme(legend.title = element_blank(), legend.text = element_text(size = 16), legend.position = c(0.8, 0.8)) 
+
+```
+
+A sanity check. I was concerned why it looked like FloM chases of AmaT and AmaT chases of FloM were nearly equal. So I looked at the data closer
+```{r}
+#Instances where FloM chased AmaT
+chases %>% filter(species == "FloM") %>% filter(behavior == "Chase") %>% filter(modifiers == "AmaT")
+#Instances where AmaT chased FloM
+chases %>% filter(species == "FloM") %>% filter(behavior == "Chased by") %>% filter(modifiers == "AmaT")
+
+#If somehow there was a mistake where these two were linked, then the Chase and Chase by incidences should be at the same time. They are not, which means the similar number of chases is a coincidence.  
+amat %>% filter(behavior %in% c("Chase", "Chased by"), modifiers == "AmaT") %>% arrange(start, modifiers)
+```
+
+
+```{r}
+fmounts <- firstreactionmounts %>% filter(mount == "F")
+#2239 total interactions with an F mount
+
+fsexual <- fmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#28 of those instances are sexual (u dives or copulation)
+
+faggression <- fmounts %>%
+  filter(behavior %in% c("Peck", 
+                         "Slam", 
+                         "Mount Attack"#, 
+                         #"Pass", 
+                         #"Lunge"
+                         )) %>%
+  filter(species_cat == "Male")
+#510 of the instances are aggressive in nature (pecks, slams, lunges, passes, and mount attacks)
+
+f_sex_vs_aggression <- rbind(fsexual, faggression)
+
+sex_vs_aggression <- f_sex_vs_aggression %>%
+  mutate(interact = if_else(behavior %in% c("Peck", "Slam", "Mount Attack"), "aggression", "courtship"))
+
+g <- ggplot(f_sex_vs_aggression, aes(interact)) +
+  geom_bar(width = 0.3, fill = "#3399FF") +
+  labs(x = " ", y = "Instances") +
+  #theme_minimal() +
+  theme(axis.text.x = element_text(size = 16), axis.text.y = element_text(size = 14)) +
+  theme(legend.title = element_blank(), legend.text = element_text(size = 16), legend.position = c(0.8, 0.8)) 
+
+g
+
+```
+
+```{r}
+
+
+mmounts <- firstreactionmounts %>% filter(mount == "M")
+#2687 total interactions with an M mount
+
+msexual <- mmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#80 of those instances are sexual (u dives or copulation)
+
+maggression <- mmounts %>%
+  filter(behavior %in% c("Peck", "Slam", "Mount Attack"))
+#943 of the instances are aggressive in nature (pecks, slams, lunges, passes, and mount attacks)
+
+mlfmounts <- firstreactionmounts %>% filter(mount == "MLF")
+#2212 total interactions with an MLF mount
+
+mlfsexual <- mlfmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#28 of those instances are sexual (u dives or copulation)
+
+mlfaggression <- mlfmounts %>%
+  filter(behavior %in% c("Peck", "Slam", "Mount Attack"))
+#731 of the instances are aggressive in nature (pecks, slams, lunges, passes, and mount attacks)
 ```
 
