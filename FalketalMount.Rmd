@@ -1,0 +1,309 @@
+---
+title: "CB_Mount"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Libraries
+```{r}
+library(tidyverse)
+```
+
+Datasets
+```{r}
+#data for first attacks, and sexual behavior for all mount experiment trials
+longcomplete <- read_csv("FirstReaction.csv")
+
+#This is the data extracted using BORIS from 26 of the trials in 2017. All behaviors have been extracted from these 26 trials
+behaviors <- read_csv("AllBehaviors.csv")
+
+#This has the mount identities for the 26 trial
+trialsides_sides <- read_csv("trialsides.csv")
+```
+# First Reactions to mounts
+Data shaping 
+```{r}
+#First filter out the trials where no behaviors happened at all
+nona <- longcomplete %>%
+  mutate(sumthing = if_else(feed == 0 & attack == 0 & tail == 0 & court == 0 & cop == 0, 0, 1)) %>%
+  filter(sumthing == 1) %>%
+  select(-sumthing)
+
+#Make some categories based on the presence of certain types
+testcategories_nona <- nona %>%
+  mutate(Fpresent = if_else(test == "M/MLF", 0, 1)) %>%
+  mutate(Mpresent = if_else(test == "F/MLF", 0, 1)) %>%
+  mutate(MLFpresent = if_else(test == "M/F", 0, 1))
+```
+
+## Sexual behaviors
+
+This looks at sex behavior of males toward the mounts. First need to shape the data a bit 
+```{r}
+#Find all the instances where courtship or copulation happened, and take out the ones where it didn't
+courtscops_nona <- testcategories_nona %>%
+  mutate(sumthing = if_else(court == 0 & cop == 0, 0, 1)) %>%
+  filter(sumthing == 1) %>%
+  select(date, trial, test, type, court, cop) %>%
+  replace_na(list(court = 0, cop = 0))
+
+#This combines courtship and copulation. If courtship happened, it takes the courtship choice. If not, but copulation happened, it takes the copulation choice.
+courtscops_combine <- courtscops_nona %>%
+  mutate(combine = if_else(court != 0, court, cop))
+```
+
+Who did androchromes choose to direct sexual behavior toward? 
+```{r}
+#All chose F first in M/F tests
+mf <- courtscops_combine %>% filter(test == "M/F") 
+mfcourtcoptable <- table(mf$combine)
+mf_fortest <- c(12, 0)
+binom.test(mf_fortest, p = .5)
+
+#All chose F first in M/MLF
+fmlf <- courtscops_combine %>% filter(test == "F/MLF")
+fmlfcourtcoptable <- table(fmlf$combine)
+fmlf_fortest <- c(16, 0)
+binom.test(fmlf_fortest, p = .5)
+
+#Some chose MLF and some chose M in M/MLF tests
+mmlf <- courtscops_combine %>% 
+  filter(test == "M/MLF")
+mmlfcourtcoptable <- table(mmlf$combine)
+prop.table(mmlfcourtcoptable)
+binom.test(mmlfcourtcoptable)
+```
+
+## Aggressive behaviors
+
+First look at whether there are differences between types of interactors in who they choose to attack. Types are androchromes, heterochromes, Amazilias, and Other.
+```{r}
+#Do types of birds differ in the way they attack males versus heterochrome females? 
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(attack != 0)
+mfattacktable <- table(mf$type, mf$attack)
+prop.table(mfattacktable, m=1)
+fisher.test(mfattacktable)
+
+#Do types of birds differ in the way they attack androchrome females versus heterochrome females? 
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0)
+fmlfattacktable <- table(fmlf$type, fmlf$attack)
+prop.table(fmlfattacktable, m=1)
+fisher.test(fmlfattacktable)
+
+#Do types of birds differ in the way they attack androchrome females versus males? 
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0)
+mmlfattacktable <- table(mmlf$type, mmlf$attack)
+prop.table(mmlfattacktable, m=1)
+fisher.test(mmlfattacktable)
+```
+
+Compile all the attacks since no evidence that types are doing different things, then test whether mounts are treated differently
+```{r}
+#Do birds bias their attacks in either direction when attacking males versus heterochrome females?
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(attack != 0)
+mfattacktable <- table(mf$attack)
+prop.table(mfattacktable)
+binom.test(mfattacktable)
+
+#Do birds bias their attacks in either direction when attacking androchrome females versus heterochrome females?
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0)
+fmlfattacktable <- table(fmlf$attack)
+prop.table(fmlfattacktable)
+binom.test(fmlfattacktable, p = 0.5)
+
+#Do birds bias their attacks in either direction when attacking males versus androchrome females?
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) 
+mmlfattacktable <- table(mmlf$attack)
+prop.table(mmlfattacktable)
+binom.test(mmlfattacktable, p = 0.5)
+```
+
+It's possible some of the aggressive behaviors are actually sexual but we're misinterpreting them. Since most sexual behaviors probably are coming from androchrome males, let's take them out and see if the patterns persist.  
+```{r}
+
+#Do non-androchrome birds bias their attacks in either direction when attacking males versus heterochrome females?
+mf <- testcategories_nona %>% 
+  filter(test == "M/F") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+mfattacktable <- table(mf$attack)
+prop.table(mfattacktable)
+binom.test(mfattacktable, p = 0.5)
+
+#Do non-androchrome birds bias their attacks in either direction when attacking androchrome females versus heterochrome females?
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+fmlfattacktable <- table(fmlf$attack)
+prop.table(fmlfattacktable)
+binom.test(fmlfattacktable)
+
+#Do non-androchrome birds bias their attacks in either direction when attacking males versus androchrome females?
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom")
+mmlfattacktable <- table(mmlf$attack)
+prop.table(mmlfattacktable)
+chisq.test(mmlfattacktable)
+binom.test(mmlfattacktable, p = 0.5)
+```
+
+What about if we just look at heterospecifics? 
+```{r}
+#Do other species bias their attacks in either direction when attacking males versus heterochrome females?
+mf <- testcategories_nona %>%
+  filter(test == "M/F") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+mfattacktable <- table(mf$attack)
+#n = 9, too small to really evaluate a p-value, but the direction is still toward the heterochrome females
+
+#Do other species bias their attacks in either direction when attacking androchrome females versus heterochrome females?
+fmlf <- testcategories_nona %>% 
+  filter(test == "F/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+fmlfattacktable <- table(fmlf$attack)
+prop.table(fmlfattacktable)
+binom.test(fmlfattacktable)
+
+#Do other species bias their attacks in either direction when attacking males versus androchrome females?
+mmlf <- testcategories_nona %>% 
+  filter(test == "M/MLF") %>%
+  filter(attack != 0) %>%
+  filter(type != "Flom") %>%
+  filter(type != "Flof")
+mmlfattacktable <- table(mmlf$attack)
+#n = 5, too small to really evaluate a p-value, but attacks toward each type were nearly equal.  
+```
+
+
+
+# All behaviors
+
+Shape the data and change Left and Right to the actual mount types
+```{r}
+#How many individual locations are in the dataset?
+n_distinct(behaviors$Obs_id)
+#26 different locations
+
+#Add some useful columns
+behaviorsp <- behaviors %>% 
+  #Make a new column with the species but no number
+  mutate(species = substr(subject, 1, 4)) %>%
+  #Group together everything that's not a jacobin for the species
+  mutate(species_cat = if_else(species == "FloM", "Male", 
+                              if_else(species == "FloF", "Female", "Other"))) %>%
+  #Group together everything that's not a jacobin for the modifier
+  mutate(modifiers_cat = if_else(modifiers == "FloM", "Male", 
+                                 if_else(modifiers == "FloF", "Female", "Other")))
+
+
+#Make datasets of all the R and L mount types in each trial
+sidesR <- trialsides_sides %>% select(Obs_id, Right)
+sidesL <- trialsides_sides %>% select(Obs_id, Left)
+
+#Seperate R and L interactions 
+firstreactionR <- behaviorsp %>% filter(modifiers == "Right")
+firstreactionL <- behaviorsp %>% filter(modifiers == "Left")
+
+#Join the mount type with all the R interactions for each trial
+firstreactionR <- firstreactionR %>%
+  inner_join(sidesR, by = "Obs_id") %>%
+  select(-modifiers) %>%
+  rename(mount = Right)
+
+#Join the mount type with all the L interactions for each trial
+firstreactionL <- firstreactionL %>%
+  inner_join(sidesL, by = "Obs_id") %>%
+  select(-modifiers) %>%
+  rename(mount = Left)
+
+#Bind the R and L interactions together again for a complete dataset
+firstreactionmounts <- rbind(firstreactionL, firstreactionR)
+```
+
+How often did androchromes chase rather than get chased? 
+```{r}
+#Filter all the interactions where an androchrome was the chaser
+mchaser <- behaviorsp %>% 
+  filter(species == "FloM") %>% 
+  filter(behavior == "Chase")
+
+#Filter all the interactions where an androchrome was chased
+mchasee <- behaviorsp %>%
+  filter(species == "FloM") %>%
+  filter(behavior == "Chased by")
+
+#chaser to chased ratio of androchromes
+nrow(mchaser)/nrow(mchasee)
+```
+
+How often did heterochromes chase rather than get chased? 
+```{r}
+#Filter all the interactions where heterochrome was the chaser
+fchaser <- behaviorsp %>% 
+  filter(species == "FloF") %>% 
+  filter(behavior == "Chase")
+
+#Filter all the interactions where heterochrome was chased
+fchasee <- behaviorsp %>%
+  filter(species == "FloF") %>%
+  filter(behavior == "Chased by")
+
+#chaser to chased ratio of heterochromes
+nrow(fchaser)/nrow(fchasee)
+```
+
+What is the rate of sexual versus aggressive behaviors? 
+```{r}
+fsexual <- fmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#28 instances of a sexual behavior toward heterochrome female mounts (u dives or copulation)
+
+faggression <- fmounts %>%
+  filter(behavior %in% c("Peck", "Slam", "Mount Attack"))
+#510 instances of aggressive behaviors toward heterochrome female mounts (pecks, slams, and mount attacks)
+
+msexual <- mmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#80 instances of a sexual behavior toward male mounts (u dives or copulation)
+
+maggression <- mmounts %>%
+  filter(behavior %in% c("Peck", "Slam", "Mount Attack"))
+#751 instances of aggressive behaviors toward male mounts (pecks, slams, and mount attacks)
+
+mlfsexual <- mlfmounts %>%
+  filter(behavior %in% c("U Dive" ,"Copulation"))
+#28 instances of a sexual behavior toward androchrome female mounts (u dives or copulation)
+
+mlfaggression <- mlfmounts %>%
+  filter(behavior %in% c("Peck", "Slam", "Mount Attack"))
+#529 instances of aggressive behaviors toward androchrome female mounts (pecks, slams, and mount attacks)
+
+#total sexual behaviors 
+nrow(fsexual) + nrow(msexual) + nrow(mlfsexual)
+
+#total aggressive behaviors
+nrow(faggression) + nrow(maggression) + nrow(mlfaggression)
+```
+
